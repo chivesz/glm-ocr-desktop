@@ -1,0 +1,104 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: glmocr-windows
+            binary_path: dist/glmocr
+            archive_ext: zip
+          - os: ubuntu-latest
+            artifact_name: glmocr-linux
+            binary_path: dist/glmocr
+            archive_ext: tar.gz
+          - os: macos-latest
+            artifact_name: glmocr-macos
+            binary_path: dist/glmocr
+            archive_ext: tar.gz
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Create venv and install deps
+        run: |
+          uv venv .venv
+          uv pip install --python .venv/bin/python "pillow>=12.1.0" "numpy>=1.26.0" "requests>=2.32.0" "pydantic>=2.12.0" "PyYAML>=6.0.0" "portalocker>=3.2.0" "python-dotenv>=1.2.0" "tqdm>=4.62.0" "pymupdf>=1.24.0" pyinstaller
+          uv pip install --python .venv/bin/python -e . --no-deps
+        shell: bash
+
+      - name: Install deps (Windows override)
+        if: matrix.os == 'windows-latest'
+        run: |
+          uv venv .venv
+          uv pip install --python .venv/Scripts/python.exe "pillow>=12.1.0" "numpy>=1.26.0" "requests>=2.32.0" "pydantic>=2.12.0" "PyYAML>=6.0.0" "portalocker>=3.2.0" "python-dotenv>=1.2.0" "tqdm>=4.62.0" "pymupdf>=1.24.0" pyinstaller
+          uv pip install --python .venv/Scripts/python.exe -e . --no-deps
+
+      - name: Build binary (Unix)
+        if: matrix.os != 'windows-latest'
+        run: .venv/bin/pyinstaller glmocr.spec
+        shell: bash
+
+      - name: Build binary (Windows)
+        if: matrix.os == 'windows-latest'
+        run: .venv\\Scripts\\pyinstaller.exe glmocr.spec
+        shell: cmd
+
+      - name: Archive Linux/macOS binary
+        if: matrix.archive_ext == 'tar.gz'
+        run: tar -czf ${{ matrix.artifact_name }}.tar.gz -C dist glmocr
+        shell: bash
+
+      - name: Archive Windows binary
+        if: matrix.archive_ext == 'zip'
+        run: Compress-Archive -Path dist/glmocr -DestinationPath ${{ matrix.artifact_name }}.zip
+        shell: pwsh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            ${{ matrix.artifact_name }}.zip
+            ${{ matrix.artifact_name }}.tar.gz
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            glmocr-windows.zip
+            glmocr-linux.tar.gz
+            glmocr-macos.tar.gz
+          generate_release_notes: true
