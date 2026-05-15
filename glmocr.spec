@@ -24,7 +24,11 @@ pypdfium2_datas, pypdfium2_binaries, pypdfium2_hiddenimports = collect_all('pypd
 pymupdf_datas = collect_data_files('pymupdf')
 pymupdf_binaries = collect_dynamic_libs('pymupdf')
 
-glmocr_datas = [('glmocr/config.yaml', 'glmocr')]
+glmocr_datas = [
+    ('glmocr/config.yaml', 'glmocr'),
+    ('models/PP-DocLayoutV3', 'models/PP-DocLayoutV3'),
+    ('models/GLM-OCR', 'models/GLM-OCR'),
+]
 
 all_datas = (
     torch_datas
@@ -68,9 +72,11 @@ all_hiddenimports = (
         'glmocr.cli',
         'glmocr.api',
         'glmocr.config',
+        'glmocr.local_ocr_client',
         'glmocr.maas_client',
         'glmocr.parser_result',
         'glmocr.pipeline',
+        'glmocr.pipeline.pipeline',
         'glmocr.utils',
         'glmocr.utils.logging',
         'glmocr.utils.markdown_utils',

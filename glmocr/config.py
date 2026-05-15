@@ -48,6 +48,8 @@ _ENV_MAP: Dict[str, str] = {
     "LAYOUT_CUDA_VISIBLE_DEVICES": "pipeline.layout.cuda_visible_devices",
     # Explicit device for layout model: "cpu", "cuda", "cuda:0", etc.
     "LAYOUT_DEVICE": "pipeline.layout.device",
+    # Local path to the PP-DocLayoutV3 model directory
+    "LAYOUT_MODEL_DIR": "pipeline.layout.model_dir",
     # Logging
     "LOG_LEVEL": "logging.level",
 }

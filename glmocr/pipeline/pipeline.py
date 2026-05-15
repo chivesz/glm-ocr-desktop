@@ -77,7 +77,13 @@ class Pipeline:
     ):
         self.config = config
         self.page_loader = PageLoader(config.page_loader)
-        self.ocr_client = OCRClient(config.ocr_api)
+        import os as _os
+        _local_model = _os.environ.get("GLMOCR_LOCAL_OCR_MODEL")
+        if _local_model:
+            from glmocr.local_ocr_client import LocalOCRClient
+            self.ocr_client = LocalOCRClient(_local_model)
+        else:
+            self.ocr_client = OCRClient(config.ocr_api)
         self.result_formatter = (
             result_formatter
             if result_formatter is not None
