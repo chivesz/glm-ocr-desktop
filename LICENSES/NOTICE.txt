@@ -1,0 +1,27 @@
+﻿glm-ocr-desktop
+===============
+
+This software is built on the following open-source components:
+
+1. GLM-OCR
+   Copyright (c) 2024 Zhipu AI
+   License: MIT
+   Source: https://github.com/zai-org/GLM-OCR
+   Model:  https://huggingface.co/zai-org/GLM-OCR
+
+2. PP-DocLayoutV3 (document layout detection)
+   Copyright (c) PaddlePaddle Authors
+   License: Apache 2.0
+   Source: https://huggingface.co/PaddlePaddle/PP-DocLayoutV3_safetensors
+
+3. PyTorch
+   Copyright (c) Meta Platforms, Inc.
+   License: BSD 3-Clause
+   Source: https://pytorch.org
+
+4. Transformers (HuggingFace)
+   Copyright (c) HuggingFace Inc.
+   License: Apache 2.0
+   Source: https://github.com/huggingface/transformers
+
+Full license texts are in the LICENSES/ directory.
