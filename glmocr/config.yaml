@@ -268,9 +268,7 @@ pipeline:
       formula:
         - display_formula
         - inline_formula
-      skip:
-        - chart
-        - image
+      skip: []
       abandon:
         - header
         - footer
