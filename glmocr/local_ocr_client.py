@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import io
 import os
+import tempfile
 from typing import Dict, Tuple, Optional
 
 from glmocr.utils.logging import get_logger
@@ -29,7 +30,7 @@ class LocalOCRClient:
         dtype = torch.float32 if not torch.cuda.is_available() else torch.bfloat16
         self._model = AutoModelForImageTextToText.from_pretrained(
             self._model_path,
-            torch_dtype=dtype,
+            dtype=dtype,
             device_map="auto",
             local_files_only=True,
         )
@@ -73,16 +74,23 @@ class LocalOCRClient:
         if pil_image is None:
             return {"error": "No image found in request"}, 400
 
-        chat_messages = [{"role": "user", "content": [
-            {"type": "image"},
-            {"type": "text", "text": text_prompt},
-        ]}]
-
+        tmp_path = None
         try:
             import torch
+
+            # Glm46VProcessor loads images from a file URL in the message content —
+            # passing images= separately causes "multiple values for keyword argument".
+            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+                tmp_path = tmp.name
+                pil_image.save(tmp_path, format="JPEG")
+
+            chat_messages = [{"role": "user", "content": [
+                {"type": "image", "url": tmp_path},
+                {"type": "text", "text": text_prompt},
+            ]}]
+
             inputs = self._processor.apply_chat_template(
                 chat_messages,
-                images=[pil_image],
                 tokenize=True,
                 add_generation_prompt=True,
                 return_dict=True,
@@ -102,3 +110,10 @@ class LocalOCRClient:
         except Exception as e:
             logger.error("Local inference error: %s", e)
             return {"error": str(e)}, 500
+
+        finally:
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
