@@ -37,19 +37,51 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
-      - name: Create venv and install deps
+      - name: Create venv (Unix)
+        if: matrix.os != 'windows-latest'
+        run: uv venv .venv
+        shell: bash
+
+      - name: Create venv (Windows)
+        if: matrix.os == 'windows-latest'
+        run: uv venv .venv
+        shell: pwsh
+
+      - name: Install CPU-only torch (Unix)
+        if: matrix.os != 'windows-latest'
         run: |
-          uv venv .venv
-          uv pip install --python .venv/bin/python "pillow>=12.1.0" "numpy>=1.26.0" "requests>=2.32.0" "pydantic>=2.12.0" "PyYAML>=6.0.0" "portalocker>=3.2.0" "python-dotenv>=1.2.0" "tqdm>=4.62.0" "pymupdf>=1.24.0" pyinstaller
+          uv pip install --python .venv/bin/python \
+            torch torchvision \
+            --index-url https://download.pytorch.org/whl/cpu
+        shell: bash
+
+      - name: Install CPU-only torch (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          uv pip install --python .venv\Scripts\python.exe `
+            torch torchvision `
+            --index-url https://download.pytorch.org/whl/cpu
+        shell: pwsh
+
+      - name: Install selfhosted deps + pyinstaller (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          uv pip install --python .venv/bin/python \
+            transformers sentencepiece accelerate \
+            "opencv-python-headless>=4.10.0" pypdfium2 \
+            pyinstaller
           uv pip install --python .venv/bin/python -e . --no-deps
         shell: bash
 
-      - name: Install deps (Windows override)
+      - name: Install selfhosted deps + pyinstaller (Windows)
         if: matrix.os == 'windows-latest'
         run: |
-          uv venv .venv
-          uv pip install --python .venv/Scripts/python.exe "pillow>=12.1.0" "numpy>=1.26.0" "requests>=2.32.0" "pydantic>=2.12.0" "PyYAML>=6.0.0" "portalocker>=3.2.0" "python-dotenv>=1.2.0" "tqdm>=4.62.0" "pymupdf>=1.24.0" pyinstaller
-          uv pip install --python .venv/Scripts/python.exe -e . --no-deps
+          uv pip install --python .venv\Scripts\python.exe `
+            transformers sentencepiece accelerate `
+            "opencv-python-headless>=4.10.0" pypdfium2 `
+            pyinstaller
+          uv pip install --python .venv\Scripts\python.exe -e . --no-deps
+        shell: pwsh
 
       - name: Build binary (Unix)
         if: matrix.os != 'windows-latest'
@@ -58,8 +90,23 @@ jobs:
 
       - name: Build binary (Windows)
         if: matrix.os == 'windows-latest'
-        run: .venv\\Scripts\\pyinstaller.exe glmocr.spec
-        shell: cmd
+        run: .venv\Scripts\pyinstaller.exe glmocr.spec
+        shell: pwsh
+
+      - name: Smoke test binary (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          ./dist/glmocr/glmocr --help
+          ./dist/glmocr/glmocr --help | grep -v -i "api.key\|maas\|zhipu\|cloud" && echo "PASS: no cloud refs in help"
+        shell: bash
+
+      - name: Smoke test binary (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          .\dist\glmocr\glmocr.exe --help
+          $help = .\dist\glmocr\glmocr.exe --help 2>&1 | Out-String
+          if ($help -match "api.key|maas|zhipu|cloud") { Write-Error "FAIL: cloud refs in help" } else { Write-Host "PASS: no cloud refs in help" }
+        shell: pwsh
 
       - name: Archive Linux/macOS binary
         if: matrix.archive_ext == 'tar.gz'
@@ -68,7 +115,7 @@ jobs:
 
       - name: Archive Windows binary
         if: matrix.archive_ext == 'zip'
-        run: Compress-Archive -Path dist/glmocr -DestinationPath ${{ matrix.artifact_name }}.zip
+        run: Compress-Archive -Path dist\glmocr -DestinationPath ${{ matrix.artifact_name }}.zip
         shell: pwsh
 
       - name: Upload artifact

@@ -107,14 +107,8 @@ class GlmOcr:
                 or ``"cuda:N"``.  Defaults to auto-detection via
                 ``cuda_visible_devices``.
         """
-        # If an API key is available (constructor arg or env var), default to MaaS.
-        # This ensures `GlmOcr()` with ZHIPU_API_KEY in env auto-selects MaaS
-        # even when the user has an old YAML with maas.enabled=false.
-        _has_api_key = api_key is not None or bool(
-            os.environ.get("ZHIPU_API_KEY") or os.environ.get("GLMOCR_API_KEY")
-        )
-        if _has_api_key and mode is None:
-            mode = "maas"
+        # LOCAL-ONLY binary: always force selfhosted mode regardless of env/api_key.
+        mode = "selfhosted"
 
         # Build config: overrides > env vars > YAML > defaults
         self.config_model = load_config(

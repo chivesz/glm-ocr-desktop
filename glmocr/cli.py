@@ -15,7 +15,6 @@ from typing import List, Optional, Tuple
 from tqdm import tqdm
 
 from glmocr.api import GlmOcr
-from glmocr.maas_client import MissingApiKeyError
 from glmocr.utils.logging import get_logger, configure_logging
 
 logger = get_logger(__name__)
@@ -117,33 +116,24 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
     Examples:
-    # Parse a single image (uses ZHIPU_API_KEY from environment)
+    # Parse a single image (local vLLM/SGLang server must be running on localhost:8080)
   glmocr parse image.png
-
-    # Pass API key directly (no env setup needed)
-  glmocr parse image.png --api-key sk-xxx
 
     # Parse all images in a directory
   glmocr parse ./images/
-
-    # Disable layout detection (OCR-only): set pipeline.enable_layout=false
-    glmocr parse image.png --config my_config.yaml
 
     # Specify output directory
   glmocr parse image.png --output ./output/
 
     # Print results to stdout only (no files written)
-  glmocr parse image.png --api-key sk-xxx --stdout --no-save
-
-    # Load API key from a specific .env file
-  glmocr parse image.png --env-file /path/to/.env
+  glmocr parse image.png --stdout --no-save
 
     # Specify custom config file
   glmocr parse image.png --config config.yaml
 
-    # Override config values via --set
+    # Override OCR server port or host
   glmocr parse image.png --set pipeline.ocr_api.api_port 8080
-  glmocr parse image.png --set pipeline.layout.use_polygon true --set pipeline.maas.enabled false
+  glmocr parse image.png --set pipeline.ocr_api.api_host 127.0.0.1
         """,
     )
 
@@ -188,24 +178,10 @@ def main():
         help="Output results to standard output (JSON format)",
     )
     parse_parser.add_argument(
-        "--api-key",
-        "-k",
-        type=str,
-        default=None,
-        help="API key for MaaS mode (overrides ZHIPU_API_KEY env var)",
-    )
-    parse_parser.add_argument(
-        "--mode",
-        type=str,
-        default=None,
-        choices=["maas", "selfhosted"],
-        help="Operation mode: 'maas' (cloud API, default) or 'selfhosted' (local vLLM/SGLang)",
-    )
-    parse_parser.add_argument(
         "--env-file",
         type=str,
         default=None,
-        help="Path to .env file to load ZHIPU_API_KEY and other settings from",
+        help="Path to .env file to load OCR API settings from",
     )
     parse_parser.add_argument(
         "--log-level",
@@ -251,8 +227,6 @@ def main():
 
         with GlmOcr(
             config_path=args.config,
-            api_key=args.api_key,
-            mode=args.mode,
             env_file=args.env_file,
             layout_device=args.layout_device,
             _dotted=dotted_overrides,
@@ -336,13 +310,14 @@ def main():
     except KeyboardInterrupt:
         logger.info("Interrupted by user")
         sys.exit(1)
-    except MissingApiKeyError as e:
+    except ConnectionError as e:
         logger.error(
-            "%s\n\n"
-            "  Quick fix:\n"
-            "    export ZHIPU_API_KEY=sk-xxx           # set once in shell\n"
-            "    glmocr parse image.png --api-key sk-xxx  # or pass directly\n\n"
-            "  Get your free key at: https://open.bigmodel.cn",
+            "Cannot connect to local OCR server: %s\n\n"
+            "  Make sure vLLM or SGLang is running:\n"
+            "    vllm serve THUDM/GLM-OCR --served-model-name glm-ocr\n\n"
+            "  Default address: http://127.0.0.1:8080/v1/chat/completions\n"
+            "  Override via: --set pipeline.ocr_api.api_host 127.0.0.1\n"
+            "                --set pipeline.ocr_api.api_port 8080",
             e,
         )
         logger.debug(traceback.format_exc())

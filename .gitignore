@@ -176,3 +176,5 @@ data/
 /apps/frontend/dist/
 *.pid
 .DS_Store
+.gm/
+dist2/
