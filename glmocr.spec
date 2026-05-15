@@ -143,6 +143,15 @@ all_hiddenimports = (
         'networkx',
         'regex',
         'psutil',
+        'unittest',
+        'unittest.case',
+        'unittest.mock',
+        'unittest.util',
+        'unittest.loader',
+        'unittest.suite',
+        'unittest.runner',
+        'unittest.signals',
+        'unittest.result',
     ]
 )
 
@@ -167,8 +176,6 @@ a = Analysis(
         'uvicorn',
         'tkinter',
         '_tkinter',
-        'test',
-        'unittest',
         'IPython',
         'jupyter',
         'notebook',
