@@ -86,19 +86,25 @@ jobs:
 
       - name: Download PP-DocLayoutV3 model (Unix)
         if: matrix.os != 'windows-latest' && steps.cache-layout-model.outputs.cache-hit != 'true'
+        env:
+          HF_TOKEN: ${{ secrets.HUGGINGFACE_KEY }}
         run: |
           .venv/bin/python -c "
+          import os
           from huggingface_hub import snapshot_download
-          snapshot_download('PaddlePaddle/PP-DocLayoutV3_safetensors', local_dir='models/PP-DocLayoutV3', local_dir_use_symlinks=False, ignore_patterns=['*.msgpack','*.h5','flax_model*','tf_model*','rust_model*'])
+          snapshot_download('PaddlePaddle/PP-DocLayoutV3_safetensors', local_dir='models/PP-DocLayoutV3', local_dir_use_symlinks=False, ignore_patterns=['*.msgpack','*.h5','flax_model*','tf_model*','rust_model*'], token=os.environ.get('HF_TOKEN'))
           "
         shell: bash
 
       - name: Download PP-DocLayoutV3 model (Windows)
         if: matrix.os == 'windows-latest' && steps.cache-layout-model.outputs.cache-hit != 'true'
+        env:
+          HF_TOKEN: ${{ secrets.HUGGINGFACE_KEY }}
         run: |
           .venv\Scripts\python.exe -c "
+          import os
           from huggingface_hub import snapshot_download
-          snapshot_download('PaddlePaddle/PP-DocLayoutV3_safetensors', local_dir='models/PP-DocLayoutV3', local_dir_use_symlinks=False, ignore_patterns=['*.msgpack','*.h5','flax_model*','tf_model*','rust_model*'])
+          snapshot_download('PaddlePaddle/PP-DocLayoutV3_safetensors', local_dir='models/PP-DocLayoutV3', local_dir_use_symlinks=False, ignore_patterns=['*.msgpack','*.h5','flax_model*','tf_model*','rust_model*'], token=os.environ.get('HF_TOKEN'))
           "
         shell: pwsh
 
@@ -111,19 +117,25 @@ jobs:
 
       - name: Download GLM-OCR model (Unix)
         if: matrix.os != 'windows-latest' && steps.cache-ocr-model.outputs.cache-hit != 'true'
+        env:
+          HF_TOKEN: ${{ secrets.HUGGINGFACE_KEY }}
         run: |
           .venv/bin/python -c "
+          import os
           from huggingface_hub import snapshot_download
-          snapshot_download('zai-org/GLM-OCR', local_dir='models/GLM-OCR', local_dir_use_symlinks=False, ignore_patterns=['*.msgpack','*.h5','flax_model*','tf_model*','rust_model*','original/*'])
+          snapshot_download('zai-org/GLM-OCR', local_dir='models/GLM-OCR', local_dir_use_symlinks=False, ignore_patterns=['*.msgpack','*.h5','flax_model*','tf_model*','rust_model*','original/*'], token=os.environ.get('HF_TOKEN'))
           "
         shell: bash
 
       - name: Download GLM-OCR model (Windows)
         if: matrix.os == 'windows-latest' && steps.cache-ocr-model.outputs.cache-hit != 'true'
+        env:
+          HF_TOKEN: ${{ secrets.HUGGINGFACE_KEY }}
         run: |
           .venv\Scripts\python.exe -c "
+          import os
           from huggingface_hub import snapshot_download
-          snapshot_download('zai-org/GLM-OCR', local_dir='models/GLM-OCR', local_dir_use_symlinks=False, ignore_patterns=['*.msgpack','*.h5','flax_model*','tf_model*','rust_model*','original/*'])
+          snapshot_download('zai-org/GLM-OCR', local_dir='models/GLM-OCR', local_dir_use_symlinks=False, ignore_patterns=['*.msgpack','*.h5','flax_model*','tf_model*','rust_model*','original/*'], token=os.environ.get('HF_TOKEN'))
           "
         shell: pwsh
 
@@ -159,7 +171,7 @@ jobs:
 
       - name: Archive Windows binary
         if: matrix.archive_ext == 'zip'
-        run: Compress-Archive -Path dist\glmocr -DestinationPath ${{ matrix.artifact_name }}.zip
+        run: Set-Location dist; 7z a -tzip -mx=1 "..\${{ matrix.artifact_name }}.zip" glmocr
         shell: pwsh
 
       - name: Upload artifact
