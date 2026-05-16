@@ -1078,7 +1078,7 @@ class TestFromEnv:
     """Tests for GlmOcrConfig.from_env() – full priority chain."""
 
     def test_defaults_when_nothing_set(self, monkeypatch):
-        """from_env with no args, no env → pure defaults."""
+        """from_env with no args, no env → pure defaults (LOCAL-ONLY: maas disabled)."""
         from glmocr.config import GlmOcrConfig, _ENV_MAP, ENV_PREFIX
 
         for suffix in _ENV_MAP:
@@ -1086,7 +1086,7 @@ class TestFromEnv:
         monkeypatch.setattr("glmocr.config._find_dotenv", lambda: None)
 
         cfg = GlmOcrConfig.from_env()
-        assert cfg.pipeline.maas.enabled is True
+        assert cfg.pipeline.maas.enabled is False
         assert cfg.logging.level == "INFO"
 
     def test_overrides_win_over_env(self, monkeypatch):
@@ -1483,8 +1483,8 @@ class TestGlmOcrParseStream:
 class TestGlmOcrConstructor:
     """Tests for GlmOcr.__init__ kwarg handling (config assembly only)."""
 
-    def test_api_key_implies_maas(self, monkeypatch):
-        """Passing api_key without mode should default to maas."""
+    def test_api_key_ignored_in_local_only_mode(self, monkeypatch):
+        """LOCAL-ONLY binary: api_key does not enable MaaS; selfhosted mode is forced."""
         from glmocr.config import _ENV_MAP, ENV_PREFIX
 
         # Clean env
@@ -1492,14 +1492,12 @@ class TestGlmOcrConstructor:
             monkeypatch.delenv(f"{ENV_PREFIX}{suffix}", raising=False)
         monkeypatch.setattr("glmocr.config._find_dotenv", lambda: None)
 
-        # MaaSClient is imported inside __init__ → patch at source module
-        with patch("glmocr.maas_client.MaaSClient") as mock_maas:
-            mock_maas.return_value.start = MagicMock()
+        with patch("glmocr.pipeline.Pipeline") as mock_pipeline:
+            mock_pipeline.return_value.start = MagicMock()
             from glmocr.api import GlmOcr
 
             parser = GlmOcr(api_key="sk-test")
-            assert parser._use_maas is True
-            assert parser.config_model.pipeline.maas.api_key == "sk-test"
+            assert parser._use_maas is False
             parser.close()
 
     def test_explicit_selfhosted_mode(self, monkeypatch):

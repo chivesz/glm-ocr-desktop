@@ -26,9 +26,11 @@ pymupdf_binaries = collect_dynamic_libs('pymupdf')
 
 glmocr_datas = [
     ('glmocr/config.yaml', 'glmocr'),
-    ('models/PP-DocLayoutV3', 'models/PP-DocLayoutV3'),
-    ('models/GLM-OCR', 'models/GLM-OCR'),
 ]
+if os.path.isdir('models/PP-DocLayoutV3'):
+    glmocr_datas.append(('models/PP-DocLayoutV3', 'models/PP-DocLayoutV3'))
+if os.path.isdir('models/GLM-OCR'):
+    glmocr_datas.append(('models/GLM-OCR', 'models/GLM-OCR'))
 
 all_datas = (
     torch_datas
