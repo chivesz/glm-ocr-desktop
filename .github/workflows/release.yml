@@ -67,20 +67,14 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: |
           uv pip install --python .venv/bin/python \
-            transformers sentencepiece accelerate \
-            "opencv-python-headless>=4.10.0" pypdfium2 pymupdf \
-            pyinstaller
-          uv pip install --python .venv/bin/python -e . --no-deps
+            -e ".[selfhosted]" pyinstaller
         shell: bash
 
       - name: Install selfhosted deps + pyinstaller (Windows)
         if: matrix.os == 'windows-latest'
         run: |
           uv pip install --python .venv\Scripts\python.exe `
-            transformers sentencepiece accelerate `
-            "opencv-python-headless>=4.10.0" pypdfium2 pymupdf `
-            pyinstaller
-          uv pip install --python .venv\Scripts\python.exe -e . --no-deps
+            -e ".[selfhosted]" pyinstaller
         shell: pwsh
 
       - name: Build binary (Unix)
