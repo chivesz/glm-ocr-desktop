@@ -77,6 +77,31 @@ jobs:
             -e ".[selfhosted]" pyinstaller
         shell: pwsh
 
+      - name: Cache PP-DocLayoutV3 model
+        id: cache-model
+        uses: actions/cache@v4
+        with:
+          path: models/PP-DocLayoutV3
+          key: pp-doclayoutv3-safetensors-v1
+
+      - name: Download PP-DocLayoutV3 model (Unix)
+        if: matrix.os != 'windows-latest' && steps.cache-model.outputs.cache-hit != 'true'
+        run: |
+          .venv/bin/python -c "
+          from huggingface_hub import snapshot_download
+          snapshot_download('PaddlePaddle/PP-DocLayoutV3_safetensors', local_dir='models/PP-DocLayoutV3', local_dir_use_symlinks=False)
+          "
+        shell: bash
+
+      - name: Download PP-DocLayoutV3 model (Windows)
+        if: matrix.os == 'windows-latest' && steps.cache-model.outputs.cache-hit != 'true'
+        run: |
+          .venv\Scripts\python.exe -c "
+          from huggingface_hub import snapshot_download
+          snapshot_download('PaddlePaddle/PP-DocLayoutV3_safetensors', local_dir='models/PP-DocLayoutV3', local_dir_use_symlinks=False)
+          "
+        shell: pwsh
+
       - name: Build binary (Unix)
         if: matrix.os != 'windows-latest'
         run: .venv/bin/pyinstaller glmocr.spec

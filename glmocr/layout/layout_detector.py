@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import sys
 from typing import TYPE_CHECKING, List, Dict
 
 import cv2
@@ -63,6 +65,21 @@ class PPDocLayoutDetector(BaseLayoutDetector):
                 "pipeline.layout.model_dir is required for self-hosted layout "
                 "detection. Set it to a local checkpoint directory or a Hugging "
                 "Face model id such as 'PaddlePaddle/PP-DocLayoutV3_safetensors'."
+            )
+        # Detect local paths (absolute path or contains a separator) and verify
+        # they exist before calling from_pretrained(), which would otherwise
+        # try to validate the path as a HuggingFace repo ID and raise a
+        # confusing error like "Repo id must use alphanumeric chars".
+        looks_local = os.sep in self.model_dir or os.path.isabs(self.model_dir)
+        if looks_local and not os.path.isdir(self.model_dir):
+            hint = (
+                " The bundled model was not included in this binary release."
+                if getattr(sys, "frozen", False)
+                else ""
+            )
+            raise RuntimeError(
+                f"Layout model directory not found: {self.model_dir}\n"
+                f"Expected PP-DocLayoutV3 model files at that path.{hint}"
             )
         if self.label_task_mapping is not None and (
             not isinstance(self.label_task_mapping, dict) or not self.label_task_mapping
