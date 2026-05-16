@@ -26,29 +26,42 @@ class LocalOCRClient:
 
         looks_local = os.sep in self._model_path or os.path.isabs(self._model_path)
         if looks_local and not os.path.isdir(self._model_path):
-            hint = (
-                " The bundled model was not included in this binary release."
-                if getattr(sys, "frozen", False)
-                else ""
-            )
-            raise RuntimeError(
-                f"GLM-OCR model directory not found: {self._model_path}\n"
-                f"Expected model files at that path.{hint}"
-            )
+            self._download_model()
 
         logger.info("Loading GLM-OCR model from %s …", self._model_path)
+        local_only = looks_local and os.path.isdir(self._model_path)
         self._processor = AutoProcessor.from_pretrained(
-            self._model_path, local_files_only=True
+            self._model_path, local_files_only=local_only
         )
         dtype = torch.float32 if not torch.cuda.is_available() else torch.bfloat16
         self._model = AutoModelForImageTextToText.from_pretrained(
             self._model_path,
             dtype=dtype,
             device_map="auto",
-            local_files_only=True,
+            local_files_only=local_only,
         )
         self._model.eval()
         logger.info("GLM-OCR model loaded on %s", next(self._model.parameters()).device)
+
+    def _download_model(self):
+        """Download zai-org/GLM-OCR to self._model_path on first run."""
+        from huggingface_hub import snapshot_download
+        logger.info(
+            "GLM-OCR model not found locally. Downloading to %s "
+            "(this only happens once) …",
+            self._model_path,
+        )
+        os.makedirs(self._model_path, exist_ok=True)
+        snapshot_download(
+            "zai-org/GLM-OCR",
+            local_dir=self._model_path,
+            local_dir_use_symlinks=False,
+            ignore_patterns=[
+                "*.msgpack", "*.h5", "flax_model*",
+                "tf_model*", "rust_model*", "original/*",
+            ],
+        )
+        logger.info("GLM-OCR model download complete.")
 
     def stop(self):
         self._model = None

@@ -108,36 +108,6 @@ jobs:
           "
         shell: pwsh
 
-      - name: Cache GLM-OCR model
-        id: cache-ocr-model
-        uses: actions/cache@v4
-        with:
-          path: models/GLM-OCR
-          key: glm-ocr-zai-org-v1
-
-      - name: Download GLM-OCR model (Unix)
-        if: matrix.os != 'windows-latest' && steps.cache-ocr-model.outputs.cache-hit != 'true'
-        env:
-          HF_TOKEN: ${{ secrets.HUGGINGFACE_KEY }}
-        run: |
-          .venv/bin/python -c "
-          import os
-          from huggingface_hub import snapshot_download
-          snapshot_download('zai-org/GLM-OCR', local_dir='models/GLM-OCR', local_dir_use_symlinks=False, ignore_patterns=['*.msgpack','*.h5','flax_model*','tf_model*','rust_model*','original/*'], token=os.environ.get('HF_TOKEN'))
-          "
-        shell: bash
-
-      - name: Download GLM-OCR model (Windows)
-        if: matrix.os == 'windows-latest' && steps.cache-ocr-model.outputs.cache-hit != 'true'
-        env:
-          HF_TOKEN: ${{ secrets.HUGGINGFACE_KEY }}
-        run: |
-          .venv\Scripts\python.exe -c "
-          import os
-          from huggingface_hub import snapshot_download
-          snapshot_download('zai-org/GLM-OCR', local_dir='models/GLM-OCR', local_dir_use_symlinks=False, ignore_patterns=['*.msgpack','*.h5','flax_model*','tf_model*','rust_model*','original/*'], token=os.environ.get('HF_TOKEN'))
-          "
-        shell: pwsh
 
       - name: Build binary (Unix)
         if: matrix.os != 'windows-latest'
