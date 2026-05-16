@@ -78,27 +78,52 @@ jobs:
         shell: pwsh
 
       - name: Cache PP-DocLayoutV3 model
-        id: cache-model
+        id: cache-layout-model
         uses: actions/cache@v4
         with:
           path: models/PP-DocLayoutV3
           key: pp-doclayoutv3-safetensors-v1
 
       - name: Download PP-DocLayoutV3 model (Unix)
-        if: matrix.os != 'windows-latest' && steps.cache-model.outputs.cache-hit != 'true'
+        if: matrix.os != 'windows-latest' && steps.cache-layout-model.outputs.cache-hit != 'true'
         run: |
           .venv/bin/python -c "
           from huggingface_hub import snapshot_download
-          snapshot_download('PaddlePaddle/PP-DocLayoutV3_safetensors', local_dir='models/PP-DocLayoutV3', local_dir_use_symlinks=False)
+          snapshot_download('PaddlePaddle/PP-DocLayoutV3_safetensors', local_dir='models/PP-DocLayoutV3', local_dir_use_symlinks=False, ignore_patterns=['*.msgpack','*.h5','flax_model*','tf_model*','rust_model*'])
           "
         shell: bash
 
       - name: Download PP-DocLayoutV3 model (Windows)
-        if: matrix.os == 'windows-latest' && steps.cache-model.outputs.cache-hit != 'true'
+        if: matrix.os == 'windows-latest' && steps.cache-layout-model.outputs.cache-hit != 'true'
         run: |
           .venv\Scripts\python.exe -c "
           from huggingface_hub import snapshot_download
-          snapshot_download('PaddlePaddle/PP-DocLayoutV3_safetensors', local_dir='models/PP-DocLayoutV3', local_dir_use_symlinks=False)
+          snapshot_download('PaddlePaddle/PP-DocLayoutV3_safetensors', local_dir='models/PP-DocLayoutV3', local_dir_use_symlinks=False, ignore_patterns=['*.msgpack','*.h5','flax_model*','tf_model*','rust_model*'])
+          "
+        shell: pwsh
+
+      - name: Cache GLM-OCR model
+        id: cache-ocr-model
+        uses: actions/cache@v4
+        with:
+          path: models/GLM-OCR
+          key: glm-ocr-zai-org-v1
+
+      - name: Download GLM-OCR model (Unix)
+        if: matrix.os != 'windows-latest' && steps.cache-ocr-model.outputs.cache-hit != 'true'
+        run: |
+          .venv/bin/python -c "
+          from huggingface_hub import snapshot_download
+          snapshot_download('zai-org/GLM-OCR', local_dir='models/GLM-OCR', local_dir_use_symlinks=False, ignore_patterns=['*.msgpack','*.h5','flax_model*','tf_model*','rust_model*','original/*'])
+          "
+        shell: bash
+
+      - name: Download GLM-OCR model (Windows)
+        if: matrix.os == 'windows-latest' && steps.cache-ocr-model.outputs.cache-hit != 'true'
+        run: |
+          .venv\Scripts\python.exe -c "
+          from huggingface_hub import snapshot_download
+          snapshot_download('zai-org/GLM-OCR', local_dir='models/GLM-OCR', local_dir_use_symlinks=False, ignore_patterns=['*.msgpack','*.h5','flax_model*','tf_model*','rust_model*','original/*'])
           "
         shell: pwsh
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import io
 import os
+import sys
 import tempfile
 from typing import Dict, Tuple, Optional
 
@@ -22,6 +23,18 @@ class LocalOCRClient:
     def start(self):
         import torch
         from transformers import AutoProcessor, AutoModelForImageTextToText
+
+        looks_local = os.sep in self._model_path or os.path.isabs(self._model_path)
+        if looks_local and not os.path.isdir(self._model_path):
+            hint = (
+                " The bundled model was not included in this binary release."
+                if getattr(sys, "frozen", False)
+                else ""
+            )
+            raise RuntimeError(
+                f"GLM-OCR model directory not found: {self._model_path}\n"
+                f"Expected model files at that path.{hint}"
+            )
 
         logger.info("Loading GLM-OCR model from %s …", self._model_path)
         self._processor = AutoProcessor.from_pretrained(
